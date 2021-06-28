@@ -14,6 +14,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Microsoft.Win32;
+using Microsoft.WindowsAPICodePack.Dialogs;
 
 namespace MCCS
 {
@@ -29,33 +31,44 @@ namespace MCCS
 
         private void decomp_Click(object sender, RoutedEventArgs e)
         {
+            string sourceDir = pathInput.Text;
             var result = MessageBox.Show(
-                "This will create a copy of your logs folder, and decompress every log file. This may take a few seconds. Proceed?",                  // the message to show
+                "This will create a copy of your logs folder, and decompress every log file. This may take a few seconds. Proceed?",  // the message to show
                 "Are you sure?",           // the title for the dialog box
-                MessageBoxButton.OKCancel, // show two buttons: Yes and No
+                MessageBoxButton.OKCancel, // show two buttons: OK and Cancel
                 MessageBoxImage.Question); // show a question mark icon
 
             if(result == MessageBoxResult.OK)
             {
-                LogDecompInit("windows");
-                MessageBox.Show("Decompression successful.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                LogDecompInit("windows", sourceDir);   // redundant os check, might implement later
             }
         }
 
-        public static void LogDecompInit(String os)
-
+        private void pathsel_Click(object sender, RoutedEventArgs e)
         {
-            if (os.Equals("windows"))
+        }
+
+        public static void LogDecompInit(string os, string sourceDir)
+        {
+            if (os.Equals("windows") && sourceDir.Contains("minecraft") && sourceDir.Contains("logs"))
             {
-                String mcDir = @"C:\Users\" + System.Security.Principal.WindowsIdentity.GetCurrent().Name.Split('\\')[1] + @"\AppData\Roaming\.minecraft\";
-                String sourceDir = mcDir + "logs";
-                String targetDir = mcDir + "MCCS_DecompLogs";
+                // String mcDir = @"C:\Users\" + System.Security.Principal.WindowsIdentity.GetCurrent().Name.Split('\\')[1] + @"\AppData\Roaming\.minecraft\";
+                string targetDir = sourceDir + @"\..\MCCS_DecompLogs";
                 copyFolder(sourceDir, targetDir, true);
                 DirectoryInfo selDir = new DirectoryInfo(targetDir);
                 foreach (FileInfo fileToDeCmprs in selDir.GetFiles("*.gz"))
                 {
                     Decomp(fileToDeCmprs);
                 }
+                MessageBox.Show("Decompression successful.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show(
+                        "Invalid path! Please check your input.",
+                        "Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
             }
         }
         public static void Decomp(FileInfo fileToDeCmprs)
@@ -72,10 +85,10 @@ namespace MCCS
                     }
                 }
             }
-            File.Delete(currentFile);
+            File.Delete(currentFile);   // ensures .gz files are deleted in target folder after decompression
         }
 
-        public static void copyFolder(String source, String target, bool copySubDirs)
+        public static void copyFolder(string source, string target, bool copySubDirs)   // this is pretty much skidded from microsoft's site
         {
             DirectoryInfo dir = new DirectoryInfo(source);
             
@@ -99,6 +112,26 @@ namespace MCCS
                 {
                     string tempPath = System.IO.Path.Combine(target, subdir.Name);
                     copyFolder(subdir.FullName, tempPath, copySubDirs);
+                }
+            }
+        }
+
+        public static void LogHandler(string target)
+        {
+            DirectoryInfo dir = new(target);
+            if (!dir.Exists)
+            {
+                throw new DirectoryNotFoundException(
+                    "Target does not exist! Dir: " + target);
+            }
+
+            FileInfo[] files = dir.GetFiles();
+
+            foreach(FileInfo file in files)
+            {
+                if(!file.Name.Contains("debug"))
+                {
+
                 }
             }
         }
